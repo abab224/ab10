@@ -125,7 +125,9 @@ socket.on('nextMatchStart', (data) => {
     resultsDiv.innerHTML += `<p>${data.message}</p>`;
     nextMatchButton.style.display = 'none'; // ボタンを非表示
     roundDisplay.textContent = `現在の試合: 第${currentRound}試合`;
-    updateCards([]);
+
+    const player = data.players.find(p => p.id === socket.id);
+    if (player) updateCards(player.cards);
 });
 
 // 相手の行動待機メッセージ

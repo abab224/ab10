@@ -183,7 +183,18 @@ function getRemainingCards() {
 }
 
 function startNextMatch() {
-    io.emit('nextMatchStart', { message: `第${gameState.currentMatch}試合を開始します！` });
+    // カードをリセット
+    players.forEach(player => {
+        player.cards = player.role === 'emperor'
+            ? ['emperor', 'citizen', 'citizen', 'citizen', 'citizen']
+            : ['slave', 'citizen', 'citizen', 'citizen', 'citizen'];
+    });
+
+    io.emit('nextMatchStart', {
+        message: `第${gameState.currentMatch}試合を開始します！`,
+        players: getRemainingCards()
+    });
+
     gameState.results = [];
     resetTurn();
 }
