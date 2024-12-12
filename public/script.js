@@ -84,7 +84,7 @@ socket.on('roundResult', (result) => {
         cardsDiv.innerHTML = ''; // ゲーム終了後はカードを無効化
     } else {
         currentRound = result.round;
-        updateCards(result.remainingCards);
+        updateCards(result.remainingCards.find(p => p.id === socket.id).cards);
     }
 });
 

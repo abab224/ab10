@@ -120,6 +120,15 @@ function evaluateRound() {
         winner: result === 'win' ? 'emperor' : result === 'lose' ? 'slave' : 'draw'
     };
 
+    // 使用したカードを削除
+    players.forEach(player => {
+        if (player.role === 'emperor') {
+            player.cards = player.cards.filter(card => card !== emperorCard);
+        } else if (player.role === 'slave') {
+            player.cards = player.cards.filter(card => card !== slaveCard);
+        }
+    });
+
     gameState.results.push(roundResult);
 
     // 勝敗を判定
@@ -142,7 +151,7 @@ function evaluateRound() {
         isGameOver,
         gameWinner,
         round: gameState.round + 1,
-        remainingCards: getRemainingCards()
+        remainingCards: getRemainingCards(),
     });
 
     gameState.emperorCard = null;
@@ -159,12 +168,7 @@ function evaluateRound() {
 function getRemainingCards() {
     return players.map(player => ({
         id: player.id,
-        cards: player.cards.filter(card => {
-            if (gameState.results.some(r => r.winner === 'draw' && (r.emperorCard === card || r.slaveCard === card))) {
-                return false; // 引き分けで使われたカードを除外
-            }
-            return true;
-        })
+        cards: player.cards
     }));
 }
 
