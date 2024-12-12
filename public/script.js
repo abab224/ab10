@@ -64,16 +64,16 @@ function updateCards(cards) {
 
 // 試合結果の更新
 socket.on('roundResult', (result) => {
-    roundDisplay.textContent = `現在の試合: 第${currentRound}試合`;
-    const message = `第${currentRound}試合結果: <b>${result.emperorCard}</b> vs <b>${result.slaveCard}</b> - 勝者: <b>${result.winner === 'draw' ? '引き分け' : (result.winner === 'emperor' ? '皇帝側' : '奴隷側')}</b>`;
+    roundDisplay.textContent = `現在の試合: 第${result.round}試合`;
+    const message = `第${result.round}試合結果: <b>${result.emperorCard}</b> vs <b>${result.slaveCard}</b> - 勝者: <b>${result.winner === 'emperor' ? '皇帝側' : '奴隷側'}</b>`;
     resultsDiv.innerHTML += `<p>${message}</p>`;
-
-    currentRound++;
 
     if (result.isGameOver) {
         const winnerMessage = result.gameWinner === 'emperor' ? '皇帝側が勝利しました！' : '奴隷側が勝利しました！';
         resultsDiv.innerHTML += `<h2>${winnerMessage}</h2>`;
+        cardsDiv.innerHTML = ''; // ゲーム終了後はカードを無効化
     } else {
+        currentRound = result.round;
         updateCards(result.remainingCards);
     }
 });

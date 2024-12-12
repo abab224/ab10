@@ -1,82 +1,146 @@
-const io = require('socket.io')(server);
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
+
+const PORT = process.env.PORT || 3000;
+
+// 静的ファイルの提供
+app.use(express.static('public'));
+
+// ゲーム管理変数
 let players = [];
-let roundCount = 1;
-let emperorWins = 0;
+let gameState = {
+    round: 0,
+    emperorCard: null,
+    slaveCard: null,
+    results: []
+};
 
+// カードの優劣
+const cardStrength = {
+    emperor: { citizen: 'win', slave: 'lose' },
+    citizen: { slave: 'win', emperor: 'lose' },
+    slave: { emperor: 'win', citizen: 'lose' }
+};
+
+// ソケット通信
 io.on('connection', (socket) => {
+    console.log(`User connected: ${socket.id}`);
+
+    // ログイン処理
     socket.on('login', (username, password) => {
+        if (!username || !/^\d{4}$/.test(password)) {
+            socket.emit('loginError', 'ユーザー名またはパスワード形式が無効です。');
+            return;
+        }
+
         if (players.length < 2) {
-            const role = players.length === 0 ? 'emperor' : 'slave';
-            players.push({ id: socket.id, username, role, cards: getInitialCards(role) });
+            players.push({ id: socket.id, username, password, role: null, cards: [] });
+            console.log(`${username} logged in`);
 
             if (players.length === 2) {
-                startGame();
+                assignRolesAndStartGame();
             } else {
-                socket.emit('waiting');
+                socket.emit('waiting', 'もう1人のプレイヤーを待っています...');
             }
         } else {
-            socket.emit('loginError', '現在ゲームが進行中です。お待ちください。');
+            socket.emit('loginError', 'ゲームがすでに満員です。');
         }
     });
 
+    // カードを選択
     socket.on('playCard', (card) => {
         const player = players.find(p => p.id === socket.id);
         if (!player) return;
 
-        player.selectedCard = card;
+        if (player.role === 'emperor') {
+            gameState.emperorCard = card;
+        } else if (player.role === 'slave') {
+            gameState.slaveCard = card;
+        }
 
-        if (players.every(p => p.selectedCard)) {
-            resolveRound();
+        if (gameState.emperorCard && gameState.slaveCard) {
+            evaluateRound();
         }
     });
 
-    function getInitialCards(role) {
-        return role === 'emperor' ? ['emperor', 'citizen', 'citizen', 'citizen', 'citizen'] :
-            ['slave', 'citizen', 'citizen', 'citizen', 'citizen'];
+    // 切断
+    socket.on('disconnect', () => {
+        players = players.filter(p => p.id !== socket.id);
+        console.log(`User disconnected: ${socket.id}`);
+    });
+});
+
+// ランダムに役割を割り当ててゲームを開始
+function assignRolesAndStartGame() {
+    const shuffledRoles = ['emperor', 'slave'].sort(() => Math.random() - 0.5);
+
+    players = players.map((player, index) => ({
+        ...player,
+        role: shuffledRoles[index],
+        cards: shuffledRoles[index] === 'emperor'
+            ? ['emperor', 'citizen', 'citizen', 'citizen', 'citizen']
+            : ['slave', 'citizen', 'citizen', 'citizen', 'citizen']
+    }));
+
+    io.emit('startGame', players);
+}
+
+// ラウンド評価
+function evaluateRound() {
+    const emperorCard = gameState.emperorCard;
+    const slaveCard = gameState.slaveCard;
+
+    const result = cardStrength[emperorCard][slaveCard];
+    const roundResult = {
+        emperorCard,
+        slaveCard,
+        winner: result === 'win' ? 'emperor' : 'slave'
+    };
+
+    gameState.results.push(roundResult);
+
+    // 試合終了時の判定
+    const emperorWins = gameState.results.filter(r => r.winner === 'emperor').length;
+    const slaveWins = gameState.results.filter(r => r.winner === 'slave').length;
+
+    let isGameOver = false;
+    let gameWinner = null;
+
+    if (slaveWins > 0) {
+        isGameOver = true;
+        gameWinner = 'slave';
+    } else if (emperorWins === 3) {
+        isGameOver = true;
+        gameWinner = 'emperor';
     }
 
-    function startGame() {
-        io.emit('startGame', players);
+    io.emit('roundResult', {
+        ...roundResult,
+        isGameOver,
+        gameWinner,
+        round: gameState.round + 1,
+    });
+
+    gameState.emperorCard = null;
+    gameState.slaveCard = null;
+    gameState.round++;
+
+    if (isGameOver) {
+        resetGame();
     }
+}
 
-    function resolveRound() {
-        const emperor = players.find(p => p.role === 'emperor');
-        const slave = players.find(p => p.role === 'slave');
+function resetGame() {
+    players = [];
+    gameState = { round: 0, emperorCard: null, slaveCard: null, results: [] };
+}
 
-        const result = getRoundResult(emperor.selectedCard, slave.selectedCard);
-
-        emperor.cards = emperor.cards.filter(card => card !== emperor.selectedCard);
-        slave.cards = slave.cards.filter(card => card !== slave.selectedCard);
-
-        roundCount++;
-        emperor.selectedCard = null;
-        slave.selectedCard = null;
-
-        const gameOver = checkGameOver(result.winner);
-
-        io.emit('roundResult', {
-            emperorCard: emperor.selectedCard,
-            slaveCard: slave.selectedCard,
-            winner: result.winner,
-            remainingCards: gameOver ? [] : players.find(p => p.id === socket.id).cards,
-            isGameOver: gameOver,
-            gameWinner: gameOver ? (emperorWins === 3 ? 'emperor' : 'slave') : null
-        });
-    }
-
-    function getRoundResult(emperorCard, slaveCard) {
-        if (emperorCard === 'emperor' && slaveCard === 'slave') return { winner: 'slave' };
-        if (emperorCard === 'slave' && slaveCard === 'emperor') return { winner: 'slave' };
-        if (emperorCard === 'emperor' && slaveCard === 'citizen') return { winner: 'emperor' };
-        if (emperorCard === 'citizen' && slaveCard === 'slave') return { winner: 'emperor' };
-        if (emperorCard === slaveCard) return { winner: 'draw' };
-        return { winner: 'emperor' };
-    }
-
-    function checkGameOver(winner) {
-        if (winner === 'slave') return true;
-        if (winner === 'emperor') emperorWins++;
-        return emperorWins === 3;
-    }
+// サーバー起動
+server.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
 });
