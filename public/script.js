@@ -8,6 +8,9 @@ const joinButton = document.getElementById('joinGame');
 const roleDisplay = document.getElementById('role');
 const cardsDiv = document.getElementById('cards');
 const resultsDiv = document.getElementById('results');
+const roundDisplay = document.getElementById('round');
+
+let currentRound = 1;
 
 joinButton.addEventListener('click', () => {
     const username = usernameInput.value;
@@ -16,7 +19,7 @@ joinButton.addEventListener('click', () => {
     if (username && /^\d{4}$/.test(password)) {
         socket.emit('login', username, password);
     } else {
-        alert('Please enter a valid username and a 4-digit password.');
+        alert('ユーザー名と4桁のパスワードを入力してください。');
     }
 });
 
@@ -26,7 +29,7 @@ socket.on('loginError', (message) => {
 });
 
 // 待機メッセージ
-socket.on('waiting', (message) => {
+socket.on('waiting', () => {
     loginDiv.style.display = 'none';
     waitingDiv.style.display = 'block';
 });
@@ -38,9 +41,15 @@ socket.on('startGame', (players) => {
     gameDiv.style.display = 'block';
 
     const player = players.find(p => p.id === socket.id);
-    roleDisplay.textContent = `You are ${player.role.toUpperCase()}`;
+    roleDisplay.textContent = `あなたは ${player.role === 'emperor' ? '皇帝側' : '奴隷側'} です`;
 
-    player.cards.forEach(card => {
+    updateCards(player.cards);
+});
+
+// カードを更新する関数
+function updateCards(cards) {
+    cardsDiv.innerHTML = '';
+    cards.forEach(card => {
         const cardImg = document.createElement('img');
         cardImg.src = `images/${card}.png`; // カード画像のパス
         cardImg.alt = card;
@@ -51,12 +60,20 @@ socket.on('startGame', (players) => {
         };
         cardsDiv.appendChild(cardImg);
     });
-});
+}
 
+// 試合結果の更新
 socket.on('roundResult', (result) => {
-    resultsDiv.innerHTML += `<p>Round: <b>${result.emperorCard}</b> vs <b>${result.slaveCard}</b> - Winner: <b>${result.winner.toUpperCase()}</b></p>`;
-});
+    roundDisplay.textContent = `現在の試合: 第${currentRound}試合`;
+    const message = `第${currentRound}試合結果: <b>${result.emperorCard}</b> vs <b>${result.slaveCard}</b> - 勝者: <b>${result.winner === 'draw' ? '引き分け' : (result.winner === 'emperor' ? '皇帝側' : '奴隷側')}</b>`;
+    resultsDiv.innerHTML += `<p>${message}</p>`;
 
-socket.on('gameOver', (data) => {
-    resultsDiv.innerHTML += `<h2>Game Over! Winner: ${data.winner.toUpperCase()}</h2>`;
+    currentRound++;
+
+    if (result.isGameOver) {
+        const winnerMessage = result.gameWinner === 'emperor' ? '皇帝側が勝利しました！' : '奴隷側が勝利しました！';
+        resultsDiv.innerHTML += `<h2>${winnerMessage}</h2>`;
+    } else {
+        updateCards(result.remainingCards);
+    }
 });
