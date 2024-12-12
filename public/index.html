@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaiji E-Card Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="login">
+        <h1>Eカードゲーム</h1>
+        <p>ログインして対戦を始めましょう！</p>
+        <input type="text" id="username" placeholder="ユーザーネーム">
+        <input type="password" id="password" placeholder="4桁のパスワード">
+        <button id="joinGame">ログイン</button>
+    </div>
+
+    <div id="waiting" style="display:none;">
+        <h1>待機中...</h1>
+        <p>もう1人のプレイヤーを待っています。</p>
+    </div>
+
+    <div id="game" style="display:none;">
+        <h1>ゲーム開始！</h1>
+        <p id="role"></p>
+        <div id="cards"></div>
+        <div id="results"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
