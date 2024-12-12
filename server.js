@@ -17,13 +17,14 @@ let gameState = {
     round: 0,
     emperorCard: null,
     slaveCard: null,
-    results: []
+    results: [],
+    waitingForOpponent: false,
 };
 
 // カードの優劣
 const cardStrength = {
     emperor: { citizen: 'win', slave: 'lose' },
-    citizen: { slave: 'win', emperor: 'lose' },
+    citizen: { slave: 'win', emperor: 'lose', citizen: 'draw' },
     slave: { emperor: 'win', citizen: 'lose' }
 };
 
@@ -57,14 +58,25 @@ io.on('connection', (socket) => {
         const player = players.find(p => p.id === socket.id);
         if (!player) return;
 
-        if (player.role === 'emperor') {
-            gameState.emperorCard = card;
-        } else if (player.role === 'slave') {
-            gameState.slaveCard = card;
-        }
+        if (gameState.waitingForOpponent) {
+            // 2人目のプレイヤーの行動
+            if (player.role === 'emperor') {
+                gameState.emperorCard = card;
+            } else if (player.role === 'slave') {
+                gameState.slaveCard = card;
+            }
 
-        if (gameState.emperorCard && gameState.slaveCard) {
             evaluateRound();
+        } else {
+            // 1人目のプレイヤーの行動
+            if (player.role === 'emperor') {
+                gameState.emperorCard = card;
+            } else if (player.role === 'slave') {
+                gameState.slaveCard = card;
+            }
+
+            gameState.waitingForOpponent = true;
+            socket.emit('waitForOpponent', '相手の行動を待っています...');
         }
     });
 
@@ -95,16 +107,22 @@ function evaluateRound() {
     const emperorCard = gameState.emperorCard;
     const slaveCard = gameState.slaveCard;
 
-    const result = cardStrength[emperorCard][slaveCard];
+    let result;
+    if (emperorCard === slaveCard && emperorCard === 'citizen') {
+        result = 'draw';
+    } else {
+        result = cardStrength[emperorCard][slaveCard];
+    }
+
     const roundResult = {
         emperorCard,
         slaveCard,
-        winner: result === 'win' ? 'emperor' : 'slave'
+        winner: result === 'win' ? 'emperor' : result === 'lose' ? 'slave' : 'draw'
     };
 
     gameState.results.push(roundResult);
 
-    // 試合終了時の判定
+    // 勝敗を判定
     const emperorWins = gameState.results.filter(r => r.winner === 'emperor').length;
     const slaveWins = gameState.results.filter(r => r.winner === 'slave').length;
 
@@ -124,10 +142,12 @@ function evaluateRound() {
         isGameOver,
         gameWinner,
         round: gameState.round + 1,
+        remainingCards: getRemainingCards()
     });
 
     gameState.emperorCard = null;
     gameState.slaveCard = null;
+    gameState.waitingForOpponent = false;
     gameState.round++;
 
     if (isGameOver) {
@@ -135,9 +155,22 @@ function evaluateRound() {
     }
 }
 
+// 残りのカードを取得
+function getRemainingCards() {
+    return players.map(player => ({
+        id: player.id,
+        cards: player.cards.filter(card => {
+            if (gameState.results.some(r => r.winner === 'draw' && (r.emperorCard === card || r.slaveCard === card))) {
+                return false; // 引き分けで使われたカードを除外
+            }
+            return true;
+        })
+    }));
+}
+
 function resetGame() {
     players = [];
-    gameState = { round: 0, emperorCard: null, slaveCard: null, results: [] };
+    gameState = { round: 0, emperorCard: null, slaveCard: null, results: [], waitingForOpponent: false };
 }
 
 // サーバー起動

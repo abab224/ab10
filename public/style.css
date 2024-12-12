@@ -57,3 +57,9 @@ button:hover {
     padding: 20px;
     border-top: 1px solid #fff;
 }
+
+#waitMessage {
+    font-size: 1.2rem;
+    color: yellow;
+    margin: 10px 0;
+}

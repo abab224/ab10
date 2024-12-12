@@ -9,6 +9,7 @@ const roleDisplay = document.getElementById('role');
 const cardsDiv = document.getElementById('cards');
 const resultsDiv = document.getElementById('results');
 const roundDisplay = document.getElementById('round');
+const waitMessage = document.getElementById('waitMessage');
 
 let currentRound = 1;
 
@@ -57,6 +58,7 @@ function updateCards(cards) {
         cardImg.onclick = () => {
             socket.emit('playCard', card);
             cardsDiv.innerHTML = ''; // 選択後、カード選択を無効化
+            waitMessage.style.display = 'block'; // 相手の行動待機メッセージを表示
         };
         cardsDiv.appendChild(cardImg);
     });
@@ -64,8 +66,16 @@ function updateCards(cards) {
 
 // 試合結果の更新
 socket.on('roundResult', (result) => {
+    waitMessage.style.display = 'none'; // 待機メッセージを非表示
     roundDisplay.textContent = `現在の試合: 第${result.round}試合`;
-    const message = `第${result.round}試合結果: <b>${result.emperorCard}</b> vs <b>${result.slaveCard}</b> - 勝者: <b>${result.winner === 'emperor' ? '皇帝側' : '奴隷側'}</b>`;
+
+    let message;
+    if (result.winner === 'draw') {
+        message = `第${result.round}試合結果: <b>${result.emperorCard}</b> vs <b>${result.slaveCard}</b> - 引き分け`;
+    } else {
+        message = `第${result.round}試合結果: <b>${result.emperorCard}</b> vs <b>${result.slaveCard}</b> - 勝者: <b>${result.winner === 'emperor' ? '皇帝側' : '奴隷側'}</b>`;
+    }
+
     resultsDiv.innerHTML += `<p>${message}</p>`;
 
     if (result.isGameOver) {
@@ -76,4 +86,10 @@ socket.on('roundResult', (result) => {
         currentRound = result.round;
         updateCards(result.remainingCards);
     }
+});
+
+// 相手の行動待機メッセージ
+socket.on('waitForOpponent', (message) => {
+    waitMessage.textContent = message;
+    waitMessage.style.display = 'block';
 });
