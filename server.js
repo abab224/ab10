@@ -157,9 +157,9 @@ function evaluateTurn() {
         return;
     }
 
-    if (emperorWins === gameState.currentMatch) {
-        io.emit('matchOver', { message: `皇帝側が試合${gameState.currentMatch}に勝利しました！次の試合に進みます。` });
+    if (emperorWins >= gameState.currentMatch) {
         gameState.currentMatch++;
+        io.emit('matchOver', { message: `皇帝側が試合${gameState.currentMatch - 1}に勝利しました！` });
         startNextMatch();
     } else {
         resetTurn();
@@ -186,7 +186,12 @@ function startNextMatch() {
             : ['slave', 'citizen', 'citizen', 'citizen', 'citizen'];
     });
 
-    io.emit('nextMatchStart', { message: `第${gameState.currentMatch}試合を開始します！`, players: getRemainingCards() });
+    io.emit('nextMatchStart', {
+        message: `第${gameState.currentMatch}試合を開始します！`,
+        players: getRemainingCards(),
+        currentMatch: gameState.currentMatch
+    });
+
     gameState.results = [];
     resetTurn();
 }
@@ -202,11 +207,6 @@ function resetGame() {
         nextMatchVotes: 0,
         restartVotes: 0
     };
-}
-
-function resetGameState() {
-    gameState.results = [];
-    gameState.currentMatch = 1;
 }
 
 // サーバー起動

@@ -28,7 +28,7 @@ restartButton.addEventListener('click', () => {
 gameDiv.appendChild(nextMatchButton);
 gameDiv.appendChild(restartButton);
 
-let currentRound = 1;
+let currentMatch = 1;
 
 // ログイン処理
 joinButton.addEventListener('click', () => {
@@ -64,6 +64,8 @@ socket.on('startGame', (players) => {
 
     updateCards(player.cards);
     restartButton.style.display = 'none'; // 再試合ボタンを非表示
+    currentMatch = 1; // 試合カウントをリセット
+    updateRoundDisplay();
 });
 
 // カードを更新する関数
@@ -83,6 +85,11 @@ function updateCards(cards) {
     });
 }
 
+// 現在の試合を表示
+function updateRoundDisplay() {
+    roundDisplay.textContent = `現在の試合: 第${currentMatch}試合`;
+}
+
 // ターン結果の更新
 socket.on('turnResult', (result) => {
     waitMessage.style.display = 'none'; // 待機メッセージを非表示
@@ -96,13 +103,15 @@ socket.on('turnResult', (result) => {
 socket.on('matchOver', (data) => {
     resultsDiv.innerHTML += `<p>${data.message}</p>`;
     nextMatchButton.style.display = 'block'; // 次の試合ボタンを表示
+    currentMatch++; // 試合数を更新
+    updateRoundDisplay();
 });
 
 // 次の試合開始
 socket.on('nextMatchStart', (data) => {
     resultsDiv.innerHTML += `<p>${data.message}</p>`;
     nextMatchButton.style.display = 'none'; // ボタンを非表示
-    roundDisplay.textContent = `現在の試合: 第${currentRound}試合`;
+    updateRoundDisplay();
 
     const player = data.players.find(p => p.id === socket.id);
     if (player) updateCards(player.cards);
