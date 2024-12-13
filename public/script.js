@@ -111,6 +111,7 @@ socket.on('matchOver', (data) => {
 socket.on('nextMatchStart', (data) => {
     resultsDiv.innerHTML += `<p>${data.message}</p>`;
     nextMatchButton.style.display = 'none'; // ボタンを非表示
+    currentMatch = data.currentMatch; // サーバーからの試合情報を更新
     updateRoundDisplay();
 
     const player = data.players.find(p => p.id === socket.id);

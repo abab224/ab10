@@ -9,7 +9,7 @@ const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 
 // 静的ファイルの提供
-app.use(express.static('public'));
+app.use(express.static('public')); // 画像を保存するディレクトリは `public/images` を想定
 
 // ゲーム管理変数
 let players = [];
@@ -157,7 +157,7 @@ function evaluateTurn() {
         return;
     }
 
-    if (emperorWins >= gameState.currentMatch) {
+    if (emperorWins === gameState.currentMatch) {
         gameState.currentMatch++;
         io.emit('matchOver', { message: `皇帝側が試合${gameState.currentMatch - 1}に勝利しました！` });
         startNextMatch();
@@ -207,6 +207,11 @@ function resetGame() {
         nextMatchVotes: 0,
         restartVotes: 0
     };
+}
+
+function resetGameState() {
+    gameState.results = [];
+    gameState.currentMatch = 1;
 }
 
 // サーバー起動
