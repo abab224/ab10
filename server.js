@@ -32,15 +32,6 @@ const cardStrength = {
 io.on('connection', (socket) => {
     console.log(`User connected: ${socket.id}`);
 
-    // 「次の試合へ」を押した処理
-    socket.on('nextMatch', () => {
-        gameState.nextMatchVotes++;
-        if (gameState.nextMatchVotes === 2) { // 両プレイヤーが押した場合
-            startNextMatch();
-            gameState.nextMatchVotes = 0; // リセット
-        }
-    });
-    
     socket.on('login', (username, password) => {
         if (!username || !/^\d{4}$/.test(password)) {
             socket.emit('loginError', 'ユーザー名またはパスワード形式が無効です。');
@@ -82,6 +73,14 @@ io.on('connection', (socket) => {
 
             gameState.waitingForOpponent = true;
             socket.emit('waitForOpponent', '相手の行動を待っています...');
+        }
+    });
+
+    socket.on('nextMatch', () => {
+        gameState.nextMatchVotes++;
+        if (gameState.nextMatchVotes === 2) {
+            gameState.nextMatchVotes = 0; // 投票数をリセット
+            startNextMatch();
         }
     });
 
@@ -182,6 +181,23 @@ function getRemainingCards() {
         id: player.id,
         cards: player.cards
     }));
+}
+
+function startNextMatch() {
+    players.forEach(player => {
+        player.cards = player.role === 'emperor'
+            ? ['emperor', 'citizen', 'citizen', 'citizen', 'citizen']
+            : ['slave', 'citizen', 'citizen', 'citizen', 'citizen'];
+    });
+
+    io.emit('nextMatchStart', {
+        message: `第${gameState.currentMatch}試合を開始します！`,
+        players: getRemainingCards(),
+        currentMatch: gameState.currentMatch
+    });
+
+    gameState.results = [];
+    resetTurn();
 }
 
 function resetGame() {
