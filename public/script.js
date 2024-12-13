@@ -73,14 +73,21 @@ function updateCards(cards) {
     });
 }
 
-// ターン結果の更新
 socket.on('turnResult', (result) => {
     waitMessage.style.display = 'none'; // 待機メッセージを非表示
+    resultsDiv.innerHTML += `<p>${result.message}</p>`;
+
+    // カードを更新
+    updateCards(result.remainingCards.find(p => p.id === socket.id).cards);
+
+    // 引き分けの場合、少し待ってから次のターンに自動移行
     if (result.result === 'draw') {
-        resultsDiv.innerHTML += `<p>このターンは引き分けでした。次のターンに進みます。</p>`;
-        updateCards(result.remainingCards.find(p => p.id === socket.id).cards);
+        setTimeout(() => {
+            resultsDiv.innerHTML += `<p>次のターンに進みます...</p>`;
+        }, 1000); // 1秒後に次のターンメッセージを表示
     }
 });
+
 
 // 試合結果の更新
 socket.on('roundResult', (result) => {

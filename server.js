@@ -110,7 +110,6 @@ function assignRolesAndStartGame() {
     io.emit('startGame', players);
 }
 
-// ターン評価
 function evaluateTurn() {
     const emperorCard = gameState.emperorCard;
     const slaveCard = gameState.slaveCard;
@@ -124,10 +123,19 @@ function evaluateTurn() {
 
     if (result === 'draw') {
         players.forEach(player => {
-            player.cards = player.cards.filter(card => card !== 'citizen');
+            if (player.role === 'emperor') {
+                player.cards = player.cards.filter(card => card !== emperorCard);
+            } else if (player.role === 'slave') {
+                player.cards = player.cards.filter(card => card !== slaveCard);
+            }
         });
 
-        io.emit('turnResult', { result: 'draw', remainingCards: getRemainingCards() });
+        io.emit('turnResult', {
+            result: 'draw',
+            remainingCards: getRemainingCards(),
+            message: '市民同士が選択され、このターンは引き分けでした。次のターンに進みます。'
+        });
+
         resetTurn();
         return;
     }
@@ -162,6 +170,7 @@ function evaluateTurn() {
 
     resetTurn();
 }
+
 
 function resetTurn() {
     gameState.emperorCard = null;
