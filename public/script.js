@@ -77,7 +77,7 @@ function updateCards(cards) {
 socket.on('turnResult', (result) => {
     waitMessage.style.display = 'none'; // 待機メッセージを非表示
     if (result.result === 'draw') {
-        resultsDiv.innerHTML += `<p>このターンは引き分けでした。次のターンに進みます。</p>`;
+        resultsDiv.innerHTML += `<p>市民同士が選択され、このターンは引き分けでした。次のターンに進みます。</p>`;
         updateCards(result.remainingCards.find(p => p.id === socket.id).cards);
     }
 });
@@ -95,23 +95,6 @@ socket.on('roundResult', (result) => {
     }
 
     resultsDiv.innerHTML += `<p>${message}</p>`;
-
-    if (result.isGameOver) {
-        const winnerMessage = result.gameWinner === 'emperor' ? '皇帝側の勝利！' : '奴隷側の勝利！';
-        resultsDiv.innerHTML += `<h2>${winnerMessage}</h2>`;
-        cardsDiv.innerHTML = ''; // ゲーム終了後はカードを無効化
-        nextMatchButton.style.display = 'none'; // 「次の試合へ」ボタン非表示
-    } else {
-        currentRound = result.round;
-        updateCards(result.remainingCards.find(p => p.id === socket.id).cards);
-    }
-});
-
-// 試合終了メッセージ
-socket.on('gameOver', (data) => {
-    resultsDiv.innerHTML += `<h2>${data.winner}</h2>`;
-    cardsDiv.innerHTML = ''; // カードを無効化
-    nextMatchButton.style.display = 'none';
 });
 
 // 次の試合メッセージ
@@ -128,6 +111,13 @@ socket.on('nextMatchStart', (data) => {
 
     const player = data.players.find(p => p.id === socket.id);
     if (player) updateCards(player.cards);
+});
+
+// 試合終了メッセージ
+socket.on('gameOver', (data) => {
+    resultsDiv.innerHTML += `<h2>${data.winner}</h2>`;
+    cardsDiv.innerHTML = ''; // カードを無効化
+    nextMatchButton.style.display = 'none';
 });
 
 // 相手の行動待機メッセージ

@@ -80,14 +80,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 次の試合への投票
-    socket.on('nextMatch', () => {
-        gameState.nextMatchVotes++;
-        if (gameState.nextMatchVotes === 2) {
-            startNextMatch();
-        }
-    });
-
     // 切断
     socket.on('disconnect', () => {
         players = players.filter(p => p.id !== socket.id);
@@ -119,7 +111,6 @@ function evaluateTurn() {
     if (emperorCard === 'citizen' && slaveCard === 'citizen') {
         result = 'draw';
 
-        // 使用した市民カードを削除
         players.forEach(player => {
             const cardIndex = player.cards.indexOf('citizen');
             if (cardIndex !== -1) {
@@ -127,23 +118,41 @@ function evaluateTurn() {
             }
         });
 
-        // クライアントに引き分けメッセージと残りカードを送信
-        io.emit('turnResult', {
-            result: 'draw',
-            remainingCards: getRemainingCards()
-        });
-
-        // 次のターンに移行する通知を送信
-        setTimeout(() => {
-            io.emit('nextTurn', { message: '次のターンに進みます。' });
-        }, 3000);
-
+        io.emit('turnResult', { result: 'draw', remainingCards: getRemainingCards() });
         resetTurn();
+        return;
+    } else {
+        result = cardStrength[emperorCard][slaveCard];
+    }
+
+    if (result === 'win') {
+        gameState.results.push({ winner: 'emperor' });
+    } else {
+        gameState.results.push({ winner: 'slave' });
+    }
+
+    const emperorWins = gameState.results.filter(r => r.winner === 'emperor').length;
+    const slaveWins = gameState.results.filter(r => r.winner === 'slave').length;
+
+    if (slaveWins > 0) {
+        io.emit('gameOver', { winner: '奴隷側の勝利！' });
+        resetGame();
         return;
     }
 
-    // 勝敗判定処理（省略せずに記載）
-    // ...
+    if (emperorWins === 3) {
+        io.emit('gameOver', { winner: '皇帝側の勝利！' });
+        resetGame();
+        return;
+    }
+
+    if (emperorWins === gameState.currentMatch) {
+        io.emit('matchOver', { message: `皇帝側が試合${gameState.currentMatch}に勝利しました！次の試合に進みます。` });
+        gameState.currentMatch++;
+        startNextMatch();
+    } else {
+        resetTurn();
+    }
 }
 
 function resetTurn() {
@@ -166,13 +175,22 @@ function startNextMatch() {
             : ['slave', 'citizen', 'citizen', 'citizen', 'citizen'];
     });
 
-    io.emit('nextMatchStart', {
-        message: `第${gameState.currentMatch}試合を開始します！`,
-        players: getRemainingCards()
-    });
-
+    io.emit('nextMatchStart', { message: `第${gameState.currentMatch}試合を開始します！`, players: getRemainingCards() });
     gameState.results = [];
     resetTurn();
+}
+
+function resetGame() {
+    players = [];
+    gameState = {
+        round: 0,
+        emperorCard: null,
+        slaveCard: null,
+        results: [],
+        waitingForOpponent: false,
+        currentMatch: 1,
+        nextMatchVotes: 0
+    };
 }
 
 // サーバー起動
