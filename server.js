@@ -8,10 +8,8 @@ const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
 
-// 静的ファイルの提供
 app.use(express.static('public'));
 
-// ゲーム管理変数
 let players = [];
 let gameState = {
     round: 0,
@@ -24,18 +22,15 @@ let gameState = {
     restartVotes: 0
 };
 
-// カードの優劣
 const cardStrength = {
     emperor: { citizen: 'win', slave: 'lose' },
     citizen: { slave: 'win', emperor: 'lose', citizen: 'draw' },
     slave: { emperor: 'win', citizen: 'lose' }
 };
 
-// ソケット通信
 io.on('connection', (socket) => {
     console.log(`User connected: ${socket.id}`);
 
-    // ログイン処理
     socket.on('login', (username, password) => {
         if (!username || !/^\d{4}$/.test(password)) {
             socket.emit('loginError', 'ユーザー名またはパスワード形式が無効です。');
@@ -56,7 +51,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // カードを選択
     socket.on('playCard', (card) => {
         const player = players.find(p => p.id === socket.id);
         if (!player) return;
@@ -81,7 +75,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 再試合リクエスト
     socket.on('restartGame', () => {
         gameState.restartVotes++;
         if (gameState.restartVotes === 2) {
@@ -90,14 +83,12 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 切断
     socket.on('disconnect', () => {
         players = players.filter(p => p.id !== socket.id);
         console.log(`User disconnected: ${socket.id}`);
     });
 });
 
-// ランダムに役割を割り当ててゲームを開始
 function assignRolesAndStartGame() {
     const shuffledRoles = ['emperor', 'slave'].sort(() => Math.random() - 0.5);
 
@@ -113,7 +104,6 @@ function assignRolesAndStartGame() {
     resetGameState();
 }
 
-// ターン評価
 function evaluateTurn() {
     const emperorCard = gameState.emperorCard;
     const slaveCard = gameState.slaveCard;
@@ -219,7 +209,6 @@ function resetGameState() {
     gameState.currentMatch = 1;
 }
 
-// サーバー起動
 server.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
 });
