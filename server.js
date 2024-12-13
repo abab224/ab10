@@ -115,61 +115,32 @@ function evaluateTurn() {
     const slaveCard = gameState.slaveCard;
 
     let result;
-    if (emperorCard === slaveCard && emperorCard === 'citizen') {
+    if (emperorCard === 'citizen' && slaveCard === 'citizen') {
         result = 'draw';
-    } else {
-        result = cardStrength[emperorCard][slaveCard];
-    }
 
-    if (result === 'draw') {
+        // 使用した市民カードを削除
         players.forEach(player => {
-            if (player.role === 'emperor') {
-                player.cards = player.cards.filter(card => card !== emperorCard);
-            } else if (player.role === 'slave') {
-                player.cards = player.cards.filter(card => card !== slaveCard);
+            const cardIndex = player.cards.indexOf('citizen');
+            if (cardIndex !== -1) {
+                player.cards.splice(cardIndex, 1);
             }
         });
 
+        // クライアントに引き分けメッセージと残りカードを送信
         io.emit('turnResult', {
             result: 'draw',
-            remainingCards: getRemainingCards(),
-            message: '市民同士が選択され、このターンは引き分けでした。次のターンに進みます。'
+            remainingCards: getRemainingCards()
         });
 
+        // 状態をリセットして次のターンへ移行
         resetTurn();
+
+        // 次のターンの準備が完了したことを通知
+        setTimeout(() => {
+            io.emit('nextTurnReady', { message: '次のターンに進みます。' });
+        }, 3000); // 3秒待機して次のターンを開始
         return;
     }
-
-    const roundResult = {
-        emperorCard,
-        slaveCard,
-        winner: result === 'win' ? 'emperor' : 'slave'
-    };
-
-    gameState.results.push(roundResult);
-
-    if (roundResult.winner === 'slave') {
-        io.emit('gameOver', { winner: '奴隷側の勝利！' });
-        resetGame();
-        return;
-    }
-
-    const emperorWins = gameState.results.filter(r => r.winner === 'emperor').length;
-
-    if (emperorWins === gameState.currentMatch) {
-        if (gameState.currentMatch === 3) {
-            io.emit('gameOver', { winner: '皇帝側の勝利！' });
-            resetGame();
-        } else {
-            gameState.nextMatchVotes = 0;
-            io.emit('matchOver', { message: `皇帝側が試合${gameState.currentMatch}に勝利しました！次の試合に進む準備をしてください。` });
-            gameState.currentMatch++;
-            startNextMatch();
-        }
-    }
-
-    resetTurn();
-}
 
 
 function resetTurn() {
