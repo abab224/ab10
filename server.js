@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -56,14 +57,16 @@ io.on('connection', (socket) => {
         if (!player) return;
 
         if (gameState.waitingForOpponent) {
+            // 相手がすでにカードを出している場合、現在のカードを保存し、ターンを評価
             if (player.role === 'emperor') {
                 gameState.emperorCard = card;
             } else if (player.role === 'slave') {
                 gameState.slaveCard = card;
             }
 
-            evaluateTurn();
+            evaluateTurn(); // ターンの評価を実行
         } else {
+            // 最初にカードを出した場合、状態を保存して相手を待つ
             if (player.role === 'emperor') {
                 gameState.emperorCard = card;
             } else if (player.role === 'slave') {
@@ -116,6 +119,8 @@ function evaluateTurn() {
     const emperorCard = gameState.emperorCard;
     const slaveCard = gameState.slaveCard;
 
+    if (!emperorCard || !slaveCard) return; // 両方のカードが揃っていない場合、評価を中止
+
     let result;
     if (emperorCard === 'citizen' && slaveCard === 'citizen') {
         result = 'draw';
@@ -128,8 +133,6 @@ function evaluateTurn() {
         });
 
         io.emit('turnResult', { result: 'draw', remainingCards: getRemainingCards() });
-        resetTurn();
-        return;
     } else {
         result = cardStrength[emperorCard][slaveCard];
     }
@@ -140,6 +143,9 @@ function evaluateTurn() {
         gameState.results.push({ winner: 'slave' });
     }
 
+    gameState.waitingForOpponent = false; // 状態をリセット
+
+    // 結果判定
     const emperorWins = gameState.results.filter(r => r.winner === 'emperor').length;
     const slaveWins = gameState.results.filter(r => r.winner === 'slave').length;
 
@@ -162,11 +168,9 @@ function evaluateTurn() {
             resetGame();
         } else {
             io.emit('matchOver', { message: `皇帝側が試合${gameState.currentMatch - 1}に勝利しました！`, showNextMatchButton: true });
-            resetTurn();
         }
-    } else {
-        resetTurn();
     }
+    resetTurn();
 }
 
 function resetTurn() {
@@ -196,7 +200,6 @@ function startNextMatch() {
     });
 
     gameState.results = [];
-    gameState.nextMatchVotes = 0; // **ここで必ず投票数をリセット**
     resetTurn();
 }
 

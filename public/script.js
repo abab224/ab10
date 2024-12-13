@@ -1,4 +1,4 @@
-// 修正済み script.js
+// script.js
 const socket = io();
 const loginDiv = document.getElementById('login');
 const gameDiv = document.getElementById('game');
