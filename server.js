@@ -157,10 +157,15 @@ function evaluateTurn() {
         return;
     }
 
-    if (emperorWins >= gameState.currentMatch) {
+    if (emperorWins === gameState.currentMatch) {
         gameState.currentMatch++;
-        io.emit('matchOver', { message: `皇帝側が試合${gameState.currentMatch - 1}に勝利しました！` });
-        startNextMatch();
+        if (gameState.currentMatch > 3) {
+            io.emit('gameOver', { winner: '皇帝側の勝利！' });
+            resetGame();
+        } else {
+            io.emit('matchOver', { message: `皇帝側が試合${gameState.currentMatch - 1}に勝利しました！` });
+            startNextMatch();
+        }
     } else {
         resetTurn();
     }
