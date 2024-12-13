@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -197,6 +196,7 @@ function startNextMatch() {
     });
 
     gameState.results = [];
+    gameState.nextMatchVotes = 0; // **ここで必ず投票数をリセット**
     resetTurn();
 }
 

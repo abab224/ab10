@@ -1,3 +1,4 @@
+// 修正済み script.js
 const socket = io();
 const loginDiv = document.getElementById('login');
 const gameDiv = document.getElementById('game');
@@ -112,7 +113,7 @@ socket.on('matchOver', (data) => {
 // 次の試合開始
 socket.on('nextMatchStart', (data) => {
     updateResultMessage(data.message);
-    nextMatchButton.style.display = 'none'; // ボタンを非表示
+    nextMatchButton.style.display = 'none'; // 次の試合ボタンを非表示
     currentMatch = data.currentMatch; // サーバーからの試合情報を更新
     updateRoundDisplay();
 
