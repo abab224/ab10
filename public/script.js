@@ -73,23 +73,14 @@ function updateCards(cards) {
     });
 }
 
-socket.on('turnResult', (data) => {
-    if (data.result === 'draw') {
-        resultsDiv.innerHTML += `<p>市民同士が選択され、このターンは引き分けでした。次のターンに進みます。</p>`;
-
-        // 使用済みの市民カードを非表示にするため、手札を更新
-        updateCards(data.remainingCards.find(p => p.id === socket.id).cards);
+// ターン結果の更新
+socket.on('turnResult', (result) => {
+    waitMessage.style.display = 'none'; // 待機メッセージを非表示
+    if (result.result === 'draw') {
+        resultsDiv.innerHTML += `<p>このターンは引き分けでした。次のターンに進みます。</p>`;
+        updateCards(result.remainingCards.find(p => p.id === socket.id).cards);
     }
 });
-
-socket.on('nextTurnReady', (data) => {
-    resultsDiv.innerHTML += `<p>${data.message}</p>`;
-
-    // 新しいターンの開始処理を実行（必要に応じて追加）
-    waitMessage.style.display = 'none';
-});
-
-
 
 // 試合結果の更新
 socket.on('roundResult', (result) => {
