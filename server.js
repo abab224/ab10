@@ -20,7 +20,8 @@ let gameState = {
     results: [],
     waitingForOpponent: false,
     currentMatch: 1,
-    nextMatchVotes: 0
+    nextMatchVotes: 0,
+    restartVotes: 0
 };
 
 // カードの優劣
@@ -80,6 +81,15 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 再試合リクエスト
+    socket.on('restartGame', () => {
+        gameState.restartVotes++;
+        if (gameState.restartVotes === 2) {
+            assignRolesAndStartGame();
+            gameState.restartVotes = 0;
+        }
+    });
+
     // 切断
     socket.on('disconnect', () => {
         players = players.filter(p => p.id !== socket.id);
@@ -100,6 +110,7 @@ function assignRolesAndStartGame() {
     }));
 
     io.emit('startGame', players);
+    resetGameState();
 }
 
 // ターン評価
@@ -181,7 +192,6 @@ function startNextMatch() {
 }
 
 function resetGame() {
-    players = [];
     gameState = {
         round: 0,
         emperorCard: null,
@@ -189,8 +199,14 @@ function resetGame() {
         results: [],
         waitingForOpponent: false,
         currentMatch: 1,
-        nextMatchVotes: 0
+        nextMatchVotes: 0,
+        restartVotes: 0
     };
+}
+
+function resetGameState() {
+    gameState.results = [];
+    gameState.currentMatch = 1;
 }
 
 // サーバー起動

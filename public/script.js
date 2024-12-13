@@ -11,13 +11,22 @@ const resultsDiv = document.getElementById('results');
 const roundDisplay = document.getElementById('round');
 const waitMessage = document.getElementById('waitMessage');
 const nextMatchButton = document.createElement('button');
+const restartButton = document.createElement('button');
+
 nextMatchButton.textContent = '次の試合へ';
 nextMatchButton.style.display = 'none';
 nextMatchButton.addEventListener('click', () => {
     socket.emit('nextMatch');
 });
 
+restartButton.textContent = '再試合';
+restartButton.style.display = 'none';
+restartButton.addEventListener('click', () => {
+    socket.emit('restartGame');
+});
+
 gameDiv.appendChild(nextMatchButton);
+gameDiv.appendChild(restartButton);
 
 let currentRound = 1;
 
@@ -54,6 +63,7 @@ socket.on('startGame', (players) => {
     roleDisplay.textContent = `あなたは ${player.role === 'emperor' ? '皇帝側' : '奴隷側'} です`;
 
     updateCards(player.cards);
+    restartButton.style.display = 'none'; // 再試合ボタンを非表示
 });
 
 // カードを更新する関数
@@ -83,21 +93,6 @@ socket.on('turnResult', (result) => {
 });
 
 // 試合結果の更新
-socket.on('roundResult', (result) => {
-    waitMessage.style.display = 'none'; // 待機メッセージを非表示
-    roundDisplay.textContent = `現在の試合: 第${result.round}試合`;
-
-    let message;
-    if (result.winner === 'draw') {
-        message = `第${result.round}試合: <b>${result.emperorCard}</b> vs <b>${result.slaveCard}</b> - 引き分け`;
-    } else {
-        message = `第${result.round}試合: <b>${result.emperorCard}</b> vs <b>${result.slaveCard}</b> - 勝者: <b>${result.winner === 'emperor' ? '皇帝側' : '奴隷側'}</b>`;
-    }
-
-    resultsDiv.innerHTML += `<p>${message}</p>`;
-});
-
-// 次の試合メッセージ
 socket.on('matchOver', (data) => {
     resultsDiv.innerHTML += `<p>${data.message}</p>`;
     nextMatchButton.style.display = 'block'; // 次の試合ボタンを表示
@@ -113,11 +108,12 @@ socket.on('nextMatchStart', (data) => {
     if (player) updateCards(player.cards);
 });
 
-// 試合終了メッセージ
+// ゲーム終了メッセージ
 socket.on('gameOver', (data) => {
     resultsDiv.innerHTML += `<h2>${data.winner}</h2>`;
     cardsDiv.innerHTML = ''; // カードを無効化
-    nextMatchButton.style.display = 'none';
+    restartButton.style.display = 'block'; // 再試合ボタンを表示
+    nextMatchButton.style.display = 'none'; // 次の試合ボタンを非表示
 });
 
 // 相手の行動待機メッセージ
