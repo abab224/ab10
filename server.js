@@ -29,8 +29,22 @@ const cardStrength = {
     slave: { emperor: 'win', citizen: 'lose' }
 };
 
+// ソケット通信
 io.on('connection', (socket) => {
     console.log(`User connected: ${socket.id}`);
+
+    // 「次の試合へ」を押した処理
+    socket.on('nextMatch', () => {
+        gameState.nextMatchVotes++;
+        if (gameState.nextMatchVotes === 2) { // 両プレイヤーが押した場合
+            startNextMatch();
+            gameState.nextMatchVotes = 0; // リセット
+        }
+    });
+
+    // その他の既存のイベント...
+});
+
 
     socket.on('login', (username, password) => {
         if (!username || !/^\d{4}$/.test(password)) {
