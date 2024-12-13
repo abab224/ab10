@@ -94,14 +94,14 @@ function updateRoundDisplay() {
 socket.on('turnResult', (result) => {
     waitMessage.style.display = 'none'; // 待機メッセージを非表示
     if (result.result === 'draw') {
-        resultsDiv.innerHTML += `<p>市民同士が選択され、このターンは引き分けでした。次のターンに進みます。</p>`;
+        updateResultMessage(`市民同士が選択され、このターンは引き分けでした。次のターンに進みます。`);
         updateCards(result.remainingCards.find(p => p.id === socket.id).cards);
     }
 });
 
 // 試合結果の更新
 socket.on('matchOver', (data) => {
-    resultsDiv.innerHTML += `<p>${data.message}</p>`;
+    updateResultMessage(data.message);
     nextMatchButton.style.display = 'block'; // 次の試合ボタンを表示
     currentMatch++; // 試合数を更新
     updateRoundDisplay();
@@ -109,7 +109,7 @@ socket.on('matchOver', (data) => {
 
 // 次の試合開始
 socket.on('nextMatchStart', (data) => {
-    resultsDiv.innerHTML += `<p>${data.message}</p>`;
+    updateResultMessage(data.message);
     nextMatchButton.style.display = 'none'; // ボタンを非表示
     currentMatch = data.currentMatch; // サーバーからの試合情報を更新
     updateRoundDisplay();
@@ -120,7 +120,7 @@ socket.on('nextMatchStart', (data) => {
 
 // ゲーム終了メッセージ
 socket.on('gameOver', (data) => {
-    resultsDiv.innerHTML += `<h2>${data.winner}</h2>`;
+    updateResultMessage(data.winner);
     cardsDiv.innerHTML = ''; // カードを無効化
     restartButton.style.display = 'block'; // 再試合ボタンを表示
     nextMatchButton.style.display = 'none'; // 次の試合ボタンを非表示
@@ -131,3 +131,8 @@ socket.on('waitForOpponent', (message) => {
     waitMessage.textContent = message;
     waitMessage.style.display = 'block';
 });
+
+// 最新メッセージのみ表示
+function updateResultMessage(message) {
+    resultsDiv.innerHTML = `<p>${message}</p>`;
+}

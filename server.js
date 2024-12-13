@@ -9,7 +9,7 @@ const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 
 // 静的ファイルの提供
-app.use(express.static('public')); // 画像を保存するディレクトリは `public/images` を想定
+app.use(express.static('public'));
 
 // ゲーム管理変数
 let players = [];
