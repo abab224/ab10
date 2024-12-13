@@ -102,7 +102,9 @@ socket.on('turnResult', (result) => {
 // 試合結果の更新
 socket.on('matchOver', (data) => {
     updateResultMessage(data.message);
-    nextMatchButton.style.display = 'block'; // 次の試合ボタンを表示
+    if (data.showNextMatchButton) {
+        nextMatchButton.style.display = 'block'; // 次の試合ボタンを表示
+    }
     currentMatch++; // 試合数を更新
     updateRoundDisplay();
 });

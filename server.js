@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -153,8 +154,8 @@ function evaluateTurn() {
             io.emit('gameOver', { winner: '皇帝側の勝利！' });
             resetGame();
         } else {
-            io.emit('matchOver', { message: `皇帝側が試合${gameState.currentMatch - 1}に勝利しました！` });
-            startNextMatch();
+            io.emit('matchOver', { message: `皇帝側が試合${gameState.currentMatch - 1}に勝利しました！`, showNextMatchButton: true });
+            resetTurn();
         }
     } else {
         resetTurn();
@@ -172,23 +173,6 @@ function getRemainingCards() {
         id: player.id,
         cards: player.cards
     }));
-}
-
-function startNextMatch() {
-    players.forEach(player => {
-        player.cards = player.role === 'emperor'
-            ? ['emperor', 'citizen', 'citizen', 'citizen', 'citizen']
-            : ['slave', 'citizen', 'citizen', 'citizen', 'citizen'];
-    });
-
-    io.emit('nextMatchStart', {
-        message: `第${gameState.currentMatch}試合を開始します！`,
-        players: getRemainingCards(),
-        currentMatch: gameState.currentMatch
-    });
-
-    gameState.results = [];
-    resetTurn();
 }
 
 function resetGame() {
