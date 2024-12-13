@@ -29,7 +29,6 @@ const cardStrength = {
     slave: { emperor: 'win', citizen: 'lose' }
 };
 
-// ソケット通信
 io.on('connection', (socket) => {
     console.log(`User connected: ${socket.id}`);
 
@@ -41,11 +40,7 @@ io.on('connection', (socket) => {
             gameState.nextMatchVotes = 0; // リセット
         }
     });
-
-    // その他の既存のイベント...
-});
-
-
+    
     socket.on('login', (username, password) => {
         if (!username || !/^\d{4}$/.test(password)) {
             socket.emit('loginError', 'ユーザー名またはパスワード形式が無効です。');
