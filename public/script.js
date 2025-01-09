@@ -16,13 +16,13 @@ const restartButtonRandom = document.createElement('button');
 restartButtonKeep.textContent = '役職を継続して再試合';
 restartButtonKeep.style.display = 'none';
 restartButtonKeep.addEventListener('click', () => {
-    socket.emit('restartGame', true);
+    socket.emit('rematch', true);
 });
 
 restartButtonRandom.textContent = '役職をランダム化して再試合';
 restartButtonRandom.style.display = 'none';
 restartButtonRandom.addEventListener('click', () => {
-    socket.emit('restartGame', false);
+    socket.emit('rematch', false);
 });
 
 gameDiv.appendChild(restartButtonKeep);
