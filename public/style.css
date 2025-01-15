@@ -63,8 +63,3 @@ button:hover {
     color: yellow;
     margin: 10px 0;
 }
-
-/* YouTube動画プレイヤーを隠すスタイル */
-#youtube-audio-player {
-    display: none; /* 見えないようにする */
-}
